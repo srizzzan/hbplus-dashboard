@@ -1,18 +1,47 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { FullScreenLoader } from "@/components/full-screen-loader";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme";
 
-SplashScreen.preventAutoHideAsync();
+function RootNavigator() {
+  const { user, appUser, loading } = useAuth();
+  const isAuthenticated = Boolean(user && appUser);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <View style={styles.root}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Protected guard={isAuthenticated} redirectTo="/login">
+          <Stack.Screen name="dashboard" />
+        </Stack.Protected>
+        <Stack.Protected guard={!isAuthenticated} redirectTo="/dashboard">
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      {loading ? <FullScreenLoader overlay /> : null}
+    </View>
   );
 }
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+});
